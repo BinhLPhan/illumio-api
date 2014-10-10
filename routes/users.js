@@ -4,6 +4,8 @@ var router = express.Router();
 var db = require('../data/db');
 var utils = require('../utils/utils');
 
+var users = db.get('users');
+
 /*
   Given a plaintext password string, uses bcrypt to salt + hash the password
   The callback takes exactly one argument, which is populated by the bcrypt'ed
@@ -70,7 +72,6 @@ router.post('/login', function(req, res) {
   if (isLoggedInOrInvalidBody(req, res)) {
     return;
   }
-  var users = db.get('users');
   users.findOne({
     username: req.body.username
   }, function(err, user) {
@@ -130,7 +131,6 @@ router.post('/', function(req, res) {
     return;
   }
   encryptPassword(req.body.password, function(pwhash) {
-    var users = db.get('users');
     users.insert({
       username: req.body.username,
       pwhash: pwhash,

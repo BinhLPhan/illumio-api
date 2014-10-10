@@ -4,6 +4,7 @@ var db = require('../data/db');
 var utils = require('../utils/utils');
 
 var secrets = db.get('secrets');
+var users = db.get('users');
 
 /*
   Require authentication on ALL access to /secrets/*
@@ -54,11 +55,11 @@ router.param('secret', function(req, res, next, secretId) {
   secrets.findOne({
     _id: secretId
   }, function(err, secret) {
-    if (err) {
-      utils.sendErrResponse(res, 404, 'Resource not found.');
-    } else {
+    if (secret) {
       req.secret = secret;
       next();
+    } else {
+      utils.sendErrResponse(res, 404, 'Resource not found.');
     }
   });
 });
@@ -84,7 +85,7 @@ router.post('*', requireContent);
     - err: on failure, an error message
 */
 router.get('/', function(req, res) {
-  secrets.find({}, { $in: req.currentUser.secrets }, function(err, secrets) {
+  secrets.find( { _id: { $in: req.currentUser.secrets } }, function(err, secrets) {
     if (err) {
       utils.sendErrResponse(res, 500, 'An unknown error occurred.');
     } else {
@@ -118,6 +119,33 @@ router.post('/', function(req, res) {
   secrets.insert({
     content: req.body.content,
     creator: req.currentUser._id
+  }, function(err, secret) {
+    if (err) {
+      utils.sendErrResponse(res, 500, 'An unknown error occurred.');
+    } else {
+      users.update({ _id: req.currentUser._id }, {
+        $addToSet: {
+          secrets: secret._id
+        }
+      });
+      utils.sendSuccessResponse(res);
+    }
+  });
+});
+
+/*
+  POST /secrets/:secret_id
+  Request parameters:
+    - secret_id: a String representation of the MongoDB _id of the secret
+  Response:
+    - success: true if the server succeeded in recording the user's secret
+    - err: on failure, an error message
+*/
+router.post('/:secret', function(req, res) {
+  secrets.update( { _id: req.secret._id }, {
+    $set: {
+      content: req.body.content
+    }
   }, function(err) {
     if (err) {
       utils.sendErrResponse(res, 500, 'An unknown error occurred.');
@@ -126,10 +154,6 @@ router.post('/', function(req, res) {
     }
   });
 });
-
-// router.post('/:secret', function(req, res) {
-
-// });
 
 /*
   DELETE /secrets/:secret_id
