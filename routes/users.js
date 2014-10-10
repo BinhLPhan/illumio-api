@@ -2,29 +2,7 @@ var express = require('express');
 var bcrypt = require('bcrypt');
 var router = express.Router();
 var db = require('../data/db');
-
-/*
-  Send a 200 OK with success:true in the request body to the
-  response argument provided.
-  The caller of this function should return after calling
-*/
-var sendSuccessResponse = function(res) {
-  res.status(200).json({
-    success: true
-  });
-};
-
-/*
-  Send an error code with success:false and error message
-  as provided in the arguments to the response argument provided.
-  The caller of this function should return after calling
-*/
-var sendErrResponse = function(res, errcode, err) {
-  res.status(errcode).json({
-    success: false,
-    err: err
-  });
-};
+var utils = require('../utils/utils');
 
 /*
   Given a plaintext password string, uses bcrypt to salt + hash the password
@@ -58,10 +36,10 @@ var comparePassword = function(password, pwhash, cb) {
 */
 var isLoggedInOrInvalidBody = function(req, res) {
   if (req.currentUser) {
-    sendErrResponse(res, 403, 'There is already a user logged in.');
+    utils.sendErrResponse(res, 403, 'There is already a user logged in.');
     return true;
   } else if (!(req.body.username && req.body.password)) {
-    sendErrResponse(res, 400, 'Username or password not provided.');
+    utils.sendErrResponse(res, 400, 'Username or password not provided.');
     return true;
   }
   return false;
@@ -86,7 +64,7 @@ var isLoggedInOrInvalidBody = function(req, res) {
     - password
   Response:
     - success: true if login succeeded; false otherwise
-    - err: if success == false, the error message goes here
+    - err: on error, an error message
 */
 router.post('/login', function(req, res) {
   if (isLoggedInOrInvalidBody(req, res)) {
@@ -100,13 +78,13 @@ router.post('/login', function(req, res) {
       comparePassword(req.body.password, user.pwhash, function(pwmatch) {
         if (pwmatch) {
           req.session.userId = user._id;
-          sendSuccessResponse(res);
+          utils.sendSuccessResponse(res);
         } else {
-          sendErrResponse(res, 403, 'Username or password invalid.');
+          utils.sendErrResponse(res, 403, 'Username or password invalid.');
         }
       });
     } else {
-      sendErrResponse(res, 403, 'Username or password invalid.');
+      utils.sendErrResponse(res, 403, 'Username or password invalid.');
     }
   });
 });
@@ -116,14 +94,14 @@ router.post('/login', function(req, res) {
   Request body: empty
   Response:
     - success: true if logout succeeded; false otherwise
-    - err: if success == false, the error message goes here
+    - err: on error, an error message
 */
 router.post('/logout', function(req, res) {
   if (req.currentUser) {
     delete req.session.userId;
-    sendSuccessResponse(res);
+    utils.sendSuccessResponse(res);
   } else {
-    sendErrResponse(res, 403, 'There is no user currently logged in.');
+    utils.sendErrResponse(res, 403, 'There is no user currently logged in.');
   }
 });
 
@@ -144,7 +122,7 @@ router.post('/logout', function(req, res) {
     - password
   Response:
     - success: true if user creation succeeded; false otherwise
-    - err: if success == false, the error message goes here
+    - err: on error, an error message
 */
 router.post('/', function(req, res) {
   console.log(req.body);
@@ -155,17 +133,18 @@ router.post('/', function(req, res) {
     var users = db.get('users');
     users.insert({
       username: req.body.username,
-      pwhash: pwhash
+      pwhash: pwhash,
+      secrets: []
     }, function(err, result) {
       if (err) {
+        // 11000 and 11001 are MongoDB duplicate key error codes
         if (err.code && (err.code === 11000 || err.code === 11001)) {
-          sendErrResponse(res, 400, 'That username is already taken!');
+          utils.sendErrResponse(res, 400, 'That username is already taken!');
         } else {
-          sendErrResponse(res, 400, 'An unknown DB error occurred.');
+          utils.sendErrResponse(res, 500, 'An unknown DB error occurred.');
         }
-        sendErrResponse(res, 400, err);
       } else {
-        sendSuccessResponse(res);
+        utils.sendSuccessResponse(res);
       }
     });
   });

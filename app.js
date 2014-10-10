@@ -7,8 +7,9 @@ var bodyParser = require('body-parser');
 
 var db = require('./data/db');
 
-var routes = require('./routes/index');
+var index = require('./routes/index');
 var users = require('./routes/users');
+var secrets = require('./routes/secrets');
 
 var app = express();
 
@@ -35,9 +36,9 @@ app.use(function(req, res, next) {
         var users = db.get('users');
         users.findOne({
             _id: req.session.userId
-        }, function(err, result) {
-            if (result) {
-                req.currentUser = result;
+        }, function(err, user) {
+            if (user) {
+                req.currentUser = user;
             } else {
                 delete req.session.userId;
             }
@@ -48,8 +49,9 @@ app.use(function(req, res, next) {
     }
 });
 
-app.use('/', routes);
+app.use('/', index);
 app.use('/users', users);
+app.use('/secrets', secrets);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -75,11 +77,7 @@ if (app.get('env') === 'development') {
 // production error handler
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-        message: err.message,
-        error: {}
-    });
+    res.status(err.status || 500).end();
 });
 
 module.exports = app;
