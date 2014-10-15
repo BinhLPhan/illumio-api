@@ -66,6 +66,7 @@ var isLoggedInOrInvalidBody = function(req, res) {
     - password
   Response:
     - success: true if login succeeded; false otherwise
+    - content: on success, an object with a single field 'user', the object of the logged in user
     - err: on error, an error message
 */
 router.post('/login', function(req, res) {
@@ -79,7 +80,7 @@ router.post('/login', function(req, res) {
       comparePassword(req.body.password, user.pwhash, function(pwmatch) {
         if (pwmatch) {
           req.session.userId = user._id;
-          utils.sendSuccessResponse(res);
+          utils.sendSuccessResponse(res, {user: user});
         } else {
           utils.sendErrResponse(res, 403, 'Username or password invalid.');
         }
@@ -126,7 +127,6 @@ router.post('/logout', function(req, res) {
     - err: on error, an error message
 */
 router.post('/', function(req, res) {
-  console.log(req.body);
   if (isLoggedInOrInvalidBody(req, res)) {
     return;
   }
@@ -148,6 +148,23 @@ router.post('/', function(req, res) {
       }
     });
   });
+});
+
+/*
+  Get whether there is a current user logged in
+
+  GET /users/current
+  No request parameters
+  Response:
+    - success.loggedIn: true if there is a user logged in; false otherwise
+    - success.user: if success.loggedIn, the currently logged in user
+*/
+router.get('/current', function(req, res) {
+  if (req.currentUser) {
+    utils.sendSuccessResponse(res, {loggedIn: true, user: req.currentUser});
+  } else {
+    utils.sendSuccessResponse(res, {loggedIn: false});
+  }
 });
 
 module.exports = router;

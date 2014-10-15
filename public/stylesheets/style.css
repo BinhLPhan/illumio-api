@@ -6,3 +6,15 @@ body {
 a {
   color: #00B7FF;
 }
+
+.error {
+  color: red;
+  margin-bottom: 10px;
+}
+
+.secret {
+  margin: 16px 0;
+}
+.secret p {
+  margin: 4px 0;
+}
