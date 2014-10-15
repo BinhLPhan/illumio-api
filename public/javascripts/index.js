@@ -1,5 +1,7 @@
 currentUser = undefined;
 
+Handlebars.registerPartial('secret', Handlebars.templates['secret']);
+
 $(document).ready(function() {
   $.get('/users/current', function(response) {
     if (response.content.loggedIn) {
