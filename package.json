@@ -16,5 +16,6 @@
     "monk": "*",
     "express-session": "*",
     "bcrypt": "*"
-  }
+  },
+  "main": "bin/www"
 }

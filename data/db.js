@@ -3,6 +3,13 @@
 // callbacks, all connections' handlers use the same exported
 // db object
 var monk = require('monk');
-var db = monk('localhost:27017/illumio');
+var connection_string = 'localhost:27017/illumio';
+if (process.env.OPENSHIFT_MONGODB_DB_PASSWORD) {
+  connection_string = process.env.OPENSHIFT_MONGODB_DB_USERNAME + ':' +
+        process.env.OPENSHIFT_MONGODB_DB_PASSWORD + '@' +
+        process.env.OPENSHIFT_MONGODB_DB_HOST + ':' +
+        process.env.OPENSHIFT_MONGODB_DB_PORT + '/illumiosecrets';
+}
+var db = monk(connection_string);
 db.get('users').index('username', {unique: true});
 module.exports = db;
